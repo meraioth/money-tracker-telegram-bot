@@ -14,6 +14,10 @@ from transaction import Transaction, Firebase
 
 from datetime import datetime
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 Categories = {
     'vivienda': {'1': 'Dividendo',

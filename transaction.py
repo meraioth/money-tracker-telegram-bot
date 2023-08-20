@@ -3,7 +3,9 @@ import os
 import firebase_admin
 from firebase_admin import credentials, firestore
 from google.cloud.firestore_v1 import FieldFilter
+from dotenv import load_dotenv
 
+load_dotenv()
 
 class Transaction:
     def __init__(self, activity, amount, description, timestamp, doc=None):
@@ -38,7 +40,9 @@ class Transaction:
     def persist(self):
         if not self.persisted():
             # Push the data dictionary to the database
-            return self.firebase_collection().add(self.to_dict().update({'category': None}))
+            to_add = self.to_dict()
+            to_add.update({'category': None})
+            return self.firebase_collection().add(to_add)
 
     def firebase_collection(self):
         return self.client.collection("transactions")

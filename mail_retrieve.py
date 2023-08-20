@@ -8,6 +8,9 @@ import re
 from firebase_admin.db import Query
 
 from transaction import Transaction
+from dotenv import load_dotenv
+
+load_dotenv()
 
 email_bco_chile = 'enviodigital@bancochile.cl'
 
