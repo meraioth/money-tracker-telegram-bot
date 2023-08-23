@@ -8,12 +8,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Transaction:
-    def __init__(self, activity, amount, description, timestamp, doc=None):
+    def __init__(self, activity, amount, description, timestamp, doc=None, user=None):
         self.activity = activity
         self.amount = amount
         self.description = description
         self.timestamp = timestamp
         self.doc = doc
+        self.user = user
         Firebase()
         self.client = firestore.client()
 
@@ -45,7 +46,7 @@ class Transaction:
             return self.firebase_collection().add(to_add)
 
     def firebase_collection(self):
-        return self.client.collection("transactions")
+        return self.client.collection('users').document(self.user).collection("transactions")
 
 
 class SingletonMeta(type):

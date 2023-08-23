@@ -14,7 +14,7 @@ load_dotenv()
 
 email_bco_chile = 'enviodigital@bancochile.cl'
 
-def fetch_gmail_emails(username, password):
+def fetch_gmail_emails(username, password, user_id):
     # Connect to Gmail's IMAP server
     imap_server = imaplib.IMAP4_SSL('imap.gmail.com')
 
@@ -44,13 +44,12 @@ def fetch_gmail_emails(username, password):
                         tr = Transaction(activity,
                                          float(amount.replace('$', '').replace('.', '').replace(',', '.')),
                                          name,
-                                         datetime.strptime(timestamp, '%d/%m/%Y %H:%M'))
+                                         datetime.strptime(timestamp, '%d/%m/%Y %H:%M'), None, user_id)
                         print("Persisted: " + str(tr.persisted()))
                         tr.persist()
 
                     except Exception as N:
                         print(N)
-                        breakpoint()
                         print("FALLO")
                         print("Activity:", activity)
                         print("Amount:", amount)
@@ -101,5 +100,6 @@ def extract_info_from_body(body):
 # Replace 'your_username' and 'your_password' with your Gmail credentials
 username = os.environ['EMAIL']
 password = os.environ['EMAILPASSWORD']
+user_id = os.environ["USERID"]
 
-fetch_gmail_emails(username, password)
+fetch_gmail_emails(username, password, user_id)

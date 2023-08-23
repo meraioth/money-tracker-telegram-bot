@@ -110,7 +110,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def last(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if validate_session_user(update):
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=str(first_non_classified()))
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=str(first_non_classified(update.message.chat.id)))
         await context.bot.send_message(chat_id=update.effective_chat.id, text=str(categories()))
 
     else:
@@ -138,7 +138,7 @@ async def categoryze_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text(
             "Comenzando!"
         )
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=str(update_category(first_non_classified().doc, Categories[category][subcategory_key])))
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=str(update_category(first_non_classified(update.message.chat.id).doc, Categories[category][subcategory_key], update.message.chat.id)))
 
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="No te conozco")
@@ -186,9 +186,8 @@ async def send_categories(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=update.effective_chat.id, text="No te conozco")
 
 
-def first_non_classified():
-    db = firestore.client()
-    tr = db.collection("transactions")
+def first_non_classified(user_id):
+    tr = transactions(user_id)
     response = tr.order_by("timestamp").where(filter=FieldFilter("category", "==", None)).limit_to_last(1).get()
     if len(response) > 0:
         response = response[0]
@@ -198,9 +197,8 @@ def first_non_classified():
     return "No hay más transacciones sin clasificación"
 
 
-def update_category(key, category):
-    db = firestore.client()
-    tr = db.collection("transactions")
+def update_category(key, category, user_id):
+    tr = transactions(user_id)
     t = tr.document(key)
     tr_dict = t.get().to_dict()
     tr_dict['doc'] = key
@@ -233,13 +231,12 @@ def validate_session_user(update):
     return update.message.chat.id == user_id
 
 
-def subcategory_summary(subcategory, month):
+def subcategory_summary(subcategory, month, user_id):
     start_date = datetime.today().replace(day=1).replace(month=month)
     end_month = calendar.monthrange(start_date.year, month)[1]
     end_date = start_date.replace(day=end_month)
 
-    db = firestore.client()
-    tr = db.collection("transactions")
+    tr = transactions(user_id)
     tr = tr.where(filter=FieldFilter("category", "==", subcategory)). \
         where(filter=FieldFilter("timestamp", ">=", start_date)). \
         where(filter=FieldFilter("timestamp", "<=", end_date))
@@ -250,12 +247,17 @@ def subcategory_summary(subcategory, month):
     return total
 
 
-def summary():
+def transactions(user_id):
+    db = firestore.client()
+    return db.collection('users').document(str(user_id)).collection("transactions")
+
+
+def summary(user_id):
     output = ""
     for k in Categories:
         amount = 0
         for subk in Categories[k]:
-            amount += subcategory_summary(Categories[k][subk])
+            amount += subcategory_summary(Categories[k][subk], None, user_id)
         output += "{}:{}\n".format(k, amount)
     return output
 
@@ -264,7 +266,7 @@ async def build_summary(context, chat_id, month=datetime.today().month):
     for k in Categories:
         output = k + ":\n"
         for subk in Categories[k]:
-            output += Categories[k][subk] + ": $" + str(subcategory_summary(Categories[k][subk], month)) + "\n"
+            output += Categories[k][subk] + ": $" + str(subcategory_summary(Categories[k][subk], month, chat_id)) + "\n"
 
         await context.bot.send_message(chat_id=chat_id, text=output)
 
