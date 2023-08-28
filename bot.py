@@ -239,7 +239,8 @@ def subcategory_summary(subcategory, month, user_id):
     tr = transactions(user_id)
     tr = tr.where(filter=FieldFilter("category", "==", subcategory)). \
         where(filter=FieldFilter("timestamp", ">=", start_date)). \
-        where(filter=FieldFilter("timestamp", "<=", end_date))
+        where(filter=FieldFilter("timestamp", "<=", end_date)). \
+        where(filter=FieldFilter("type", "==", 'debito'))
     tr_collection = tr.get()
     total = 0
     for transaction in tr_collection:

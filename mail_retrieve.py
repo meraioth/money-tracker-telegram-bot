@@ -37,16 +37,20 @@ def fetch_gmail_emails(username, password, user_id):
 
                 if status == 'OK':
                     # 'msg_data' is a list containing the raw email data; extract the message content
-                    activity, amount, name, timestamp = process_email(msg_data)
+                    activity, amount, name, timestamp, type = process_email(msg_data)
                     if amount is None or timestamp is None:
                         continue
                     try:
                         tr = Transaction(activity,
                                          float(amount.replace('$', '').replace('.', '').replace(',', '.')),
                                          name,
-                                         datetime.strptime(timestamp, '%d/%m/%Y %H:%M'), None, user_id)
+                                         datetime.strptime(timestamp, '%d/%m/%Y %H:%M'),
+                                         type,
+                                         None,
+                                         user_id)
                         print("Persisted: " + str(tr.persisted()))
                         tr.persist()
+                        print("TX: " + str(tr))
 
                     except Exception as N:
                         print(N)
@@ -69,8 +73,8 @@ def process_email(msg_data):
     # Extract various email properties (e.g., Body)
     email_body = email_message.get_payload()[0].as_string()
     email_text = BeautifulSoup(email_body, 'html.parser').get_text().replace("=\n", '')
-    activity, amount, name, timestamp = extract_info_from_body(email_text)
-    return activity, amount, name, timestamp
+    activity, amount, name, timestamp, type = extract_info_from_body(email_text)
+    return activity, amount, name, timestamp, type
 
 
 def extract_info_from_body(body):
@@ -79,21 +83,24 @@ def extract_info_from_body(body):
     amount_pattern = r'\$[\d,.]+'  # Matches amounts like $8.756 or $1,234.56
     name_pattern = r'en\s(.+?)\sel'  # Matches name between 'en' and 'el'
     timestamp_pattern = r'el\s(\d{2}/\d{2}/\d{4}\s\d{2}:\d{2})'  # Matches timestamp in format dd/mm/yyyy HH:MM
+    credito_pattern = r'Tarjeta de Crédito'
 
     # Extracting information using regex
     activity_match = re.search(activity_pattern, body)
     amount_match = re.search(amount_pattern, body)
     name_match = re.search(name_pattern, body)
     timestamp_match = re.search(timestamp_pattern, body)
+    credito_match = re.search(credito_pattern, body)
 
     # Retrieving matched information
     activity = activity_match.group(1) if activity_match else None
     amount = amount_match.group() if amount_match else None
     name = name_match.group(1) if name_match and activity == 'compra' else None
     timestamp = timestamp_match.group(1) if timestamp_match else None
+    type = 'credito' if credito_match else 'debito'
     if amount is None:
-        return None, None, None, None
-    return activity, amount, name, timestamp
+        return None, None, None, None, None
+    return activity, amount, name, timestamp, type
 
 
 # print(f"Data saved to Firebase with key: {new_data_entry.key}")

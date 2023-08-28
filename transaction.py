@@ -8,42 +8,58 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Transaction:
-    def __init__(self, activity, amount, description, timestamp, doc=None, user=None):
+    def __init__(self, activity, amount, description, timestamp, type, doc=None, user=None):
         self.activity = activity
         self.amount = amount
         self.description = description
         self.timestamp = timestamp
+        self.type = type
         self.doc = doc
         self.user = user
+        self.reference_set = None
         Firebase()
         self.client = firestore.client()
 
     @staticmethod
     def from_dict(source):
-        return Transaction(source['activity'], source['amount'], source['description'], source['timestamp'],
+        return Transaction(source['activity'], source['amount'], source['description'], source['timestamp'], source['type'],
                            source.get('doc'))
 
     def to_dict(self):
         return {'activity': self.activity,
                 'amount': self.amount,
                 'description': self.description,
-                'timestamp': self.timestamp}
+                'timestamp': self.timestamp,
+                'type': self.type},
 
     def __repr__(self):
-        return f"actividad: {self.activity}, \nmonto: {self.amount}, \ncomercio: {self.description}, \nfecha: {self.timestamp} "
+        return f"actividad: {self.activity}, \nmonto: {self.amount}, \ncomercio: {self.description}, \nfecha: {self.timestamp}, \ntype: {self.type} "
 
     def persisted(self):
-        tr = self.firebase_collection().where(filter=FieldFilter("activity", "==", self.activity)). \
+        tr = self.reference()
+        return len(tr) > 0
+
+    def reference(self):
+        self.reference_set = self.firebase_collection().where(filter=FieldFilter("activity", "==", self.activity)). \
             where(filter=FieldFilter("description", "==", self.description)). \
-            where(filter=FieldFilter("timestamp", "==", self.timestamp))
-        return len(tr.get()) > 0
+            where(filter=FieldFilter("timestamp", "==", self.timestamp)).get() if self.reference_set is None else self.reference_set
+        return self.reference_set
+
+    def reference_dict(self):
+        return self.reference()[0].to_dict()
 
     def persist(self):
-        if not self.persisted():
+        tr_persisted = self.persisted()
+        if tr_persisted and self.reference_dict().get('type') is None:
+            return self.update_type()
+        if not tr_persisted:
             # Push the data dictionary to the database
             to_add = self.to_dict()
             to_add.update({'category': None})
             return self.firebase_collection().add(to_add)
+
+    def update_type(self):
+        return self.reference()[0].reference.set({"type": self.type}, merge=True)
 
     def firebase_collection(self):
         return self.client.collection('users').document(self.user).collection("transactions")
