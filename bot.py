@@ -200,16 +200,18 @@ def first_non_classified(user_id):
 def update_category(key, category, user_id):
     tr = transactions(user_id)
     t = tr.document(key)
-    tr_dict = t.get().to_dict()
-    tr_dict['doc'] = key
-    t = Transaction.from_dict(tr_dict)
-    tr = tr.where(filter=FieldFilter("category", "==", None)). \
-        where(filter=FieldFilter("activity", "==", t.activity)). \
-        where(filter=FieldFilter("description", "==", t.description))
-    tr_collection = tr.get()
-    for transaction in tr_collection:
-        transaction.reference.set({"category": category}, merge=True)
-    return f"{len(tr_collection)} movimientos categorizados!"
+    t.set({"category": category}, merge=True)
+    return 'categorizado'
+    # tr_dict = t.get().to_dict()
+    # tr_dict['doc'] = key
+    # t = Transaction.from_dict(tr_dict)
+    # tr = tr.where(filter=FieldFilter("category", "==", None)). \
+    #     where(filter=FieldFilter("activity", "==", t.activity)). \
+    #     where(filter=FieldFilter("description", "==", t.description))
+    # tr_collection = tr.get()
+    # for transaction in tr_collection:
+    #     transaction.reference.set({"category": category}, merge=True)
+    # return f"{len(tr_collection)} movimientos categorizados!"
 
 
 def subcategories(number):
