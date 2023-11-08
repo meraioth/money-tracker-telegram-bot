@@ -59,6 +59,8 @@ def fetch_gmail_emails(username, password, user_id):
                         print("Amount:", amount)
                         print("Name:", name)
                         print("Timestamp:", timestamp)
+                        raise N
+
     except Exception as e:
         print("Error: {}".format(e))
 
