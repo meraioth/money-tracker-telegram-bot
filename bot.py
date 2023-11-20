@@ -99,7 +99,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
-SUBCATEGORY, CATEGORIZE = range(2)
+SUBCATEGORY, CATEGORIZE, USE_SUGGESTION = range(3)
 
 MONTH = 0
 
@@ -108,14 +108,34 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="comandos: \n/last\n/cancel")
 
 
+
+
 async def last(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if validate_session_user(update):
         await context.bot.send_message(chat_id=update.effective_chat.id, text=str(first_non_classified(update.message.chat.id)))
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=str(categories()))
-
+        suggestion_list = suggestions(update.message.chat.id)
+        if len(suggestion_list) > 0:
+            suggestions_str = '\n'.join(str(e[0]+1)+': '+e[1] for e in enumerate(suggestion_list))
+            action = f""" Clasifica usando el historial:\n{suggestions_str}
+            \n Si deseas reclasificar : /classify_last
+            """
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=action)
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=str(categories()))
+            return SUBCATEGORY
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="No te conozco")
-    return SUBCATEGORY
+    return USE_SUGGESTION
+
+
+async def use_suggestion(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    idx = int(update.message.text)
+    category = suggestions(update.message.chat.id)[idx-1]
+    if validate_session_user(update):
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=str(update_category(first_non_classified(update.message.chat.id).doc, category, update.message.chat.id)))
+    else:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="No te conozco")
+    return ConversationHandler.END
 
 
 async def subcategory_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -135,9 +155,6 @@ async def categoryze_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
         category = category_keys[int(category_id)-1]
         subcategory_list = list(Categories[category].keys())
         subcategory_key = subcategory_list[int(subcategory_id)-1]
-        await update.message.reply_text(
-            "Comenzando!"
-        )
         await context.bot.send_message(chat_id=update.effective_chat.id, text=str(update_category(first_non_classified(update.message.chat.id).doc, Categories[category][subcategory_key], update.message.chat.id)))
 
     else:
@@ -201,7 +218,7 @@ def update_category(key, category, user_id):
     tr = transactions(user_id)
     t = tr.document(key)
     t.set({"category": category}, merge=True)
-    return 'categorizado'
+    return f"{t.get().get('description').strip().title()} Categorizado correctamente! \nSigue clasificando /last"
     # tr_dict = t.get().to_dict()
     # tr_dict['doc'] = key
     # t = Transaction.from_dict(tr_dict)
@@ -228,6 +245,19 @@ def categories():
         cat += f"{str(i+1)}) {c}\n"
     return cat
 
+
+def suggestions(user_id):
+    non_classified = first_non_classified(user_id)
+    tr = transactions(user_id)
+    t = tr.document(non_classified.doc)
+    tr_dict = t.get().to_dict()
+    tr_dict['doc'] = non_classified.doc
+    t = Transaction.from_dict(tr_dict)
+    tr = tr.where(filter=FieldFilter("category", "!=", '')). \
+        where(filter=FieldFilter("activity", "==", t.activity)). \
+        where(filter=FieldFilter("description", "==", t.description))
+    tr_collection = tr.get()
+    return list(set([x.get('category') for x in tr_collection[-3:-1]]))
 
 def validate_session_user(update):
     return update.message.chat.id == user_id
@@ -281,6 +311,7 @@ if __name__ == '__main__':
     last_command_handler = ConversationHandler(
         entry_points=[CommandHandler("last", last)],
         states={
+            USE_SUGGESTION: [MessageHandler(filters.Regex(r"[0-9]+$"), use_suggestion)],
             SUBCATEGORY: [MessageHandler(filters.Regex(r"[0-9]+$"), subcategory_command)],
             CATEGORIZE: [MessageHandler(filters.Regex(r"[0-9]+$"), categoryze_command)],
 
