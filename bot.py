@@ -112,15 +112,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def last(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if validate_session_user(update):
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=str(first_non_classified(update.message.chat.id)))
         suggestion_list = suggestions(update.message.chat.id)
         if len(suggestion_list) > 0:
             suggestions_str = '\n'.join(str(e[0]+1)+': '+e[1] for e in enumerate(suggestion_list))
+            await context.bot.send_message(chat_id=update.effective_chat.id,
+                                           text=str(first_non_classified(update.message.chat.id)))
+
             action = f""" Clasifica usando el historial:\n{suggestions_str}
-            \n Si deseas reclasificar : /classify_last
+            \n Si deseas reclasificar : envia 0
             """
             await context.bot.send_message(chat_id=update.effective_chat.id, text=action)
         else:
+            await context.bot.send_message(chat_id=update.effective_chat.id,
+                                           text=str(first_non_classified(update.message.chat.id)))
             await context.bot.send_message(chat_id=update.effective_chat.id, text=str(categories()))
             return SUBCATEGORY
     else:
@@ -129,13 +133,17 @@ async def last(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def use_suggestion(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    idx = int(update.message.text)
-    category = suggestions(update.message.chat.id)[idx-1]
-    if validate_session_user(update):
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=str(update_category(first_non_classified(update.message.chat.id).doc, category, update.message.chat.id)))
+    if update.message.text == '0':
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=str(categories()))
+        return SUBCATEGORY
     else:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="No te conozco")
-    return ConversationHandler.END
+        idx = int(update.message.text)
+        category = suggestions(update.message.chat.id)[idx-1]
+        if validate_session_user(update):
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=str(update_category(first_non_classified(update.message.chat.id).doc, category, update.message.chat.id)))
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="No te conozco")
+        return ConversationHandler.END
 
 
 async def subcategory_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
