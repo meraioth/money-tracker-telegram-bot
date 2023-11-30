@@ -177,6 +177,18 @@ async def monthly_summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=update.effective_chat.id, text="No te conozco")
 
 
+def sync_transactions():
+    os.system('python3 mail_retrieve.py &')
+    return 0
+
+
+async def sync(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if validate_session_user(update):
+        sync_transactions()
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Actualizando...")
+    else:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="No te conozco")
+
 async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if validate_session_user(update):
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Ingresa mes a consultar")
@@ -338,6 +350,7 @@ if __name__ == '__main__':
 
     application.add_handler(last_command_handler)
     application.add_handler(summary_handler)
+    application.add_handler(CommandHandler("sync", sync))
     application.add_handler(CommandHandler("monthly_summary", monthly_summary))
 
     # Run the bot until the user presses Ctrl-C
