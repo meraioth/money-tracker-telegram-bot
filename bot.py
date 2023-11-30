@@ -188,6 +188,7 @@ async def sync(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Actualizando...")
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="No te conozco")
+    return ConversationHandler.END
 
 async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if validate_session_user(update):
