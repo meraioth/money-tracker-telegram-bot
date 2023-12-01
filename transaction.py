@@ -30,7 +30,7 @@ class Transaction:
                 'amount': self.amount,
                 'description': self.description,
                 'timestamp': self.timestamp,
-                'type': self.type},
+                'type': self.type}
 
     def __repr__(self):
         return f"actividad: {self.activity}, \nmonto: {self.amount}, \ncomercio: {self.description}, \nfecha: {self.timestamp}, \ntype: {self.type} "
