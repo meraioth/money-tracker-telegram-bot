@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-banks = {'chile':
+banks = {'Banco de Chile':
              {'email':'enviodigital@bancochile.cl',
               'regex': {
                   'activity_pattern': r'(\b\w+\b)\s+por', # Matches the activity before "por"
@@ -21,8 +21,8 @@ banks = {'chile':
                   'timestamp_pattern': r'el\s(\d{2}/\d{2}/\d{4}\s\d{2}:\d{2})',  # Matches timestamp in format dd/mm/yyyy HH:MM
                   'credito_pattern': r'Tarjeta de Crédito',}
               },
-         'estado':
-             {'email':'notificaciones@correo.bancoestado.cl',
+         'Banco Estado':
+             {'email': 'notificaciones@correo.bancoestado.cl',
               'regex': {
                   'activity_pattern': r'ha realizado\s+(\w+)',  # Matches the activity before "por"
                   'amount_pattern': r'\$[\d,.]+',  # Matches amounts like $8.756 or $1,234.56
@@ -65,6 +65,7 @@ def fetch_gmail_emails(username, password, user_id, bank_selected):
                                          name,
                                          datetime.strptime(timestamp, '%d/%m/%Y %H:%M'),
                                          type,
+                                         bank_selected,
                                          None,
                                          user_id)
                         print("Persisted: " + str(tr.persisted()))
@@ -125,5 +126,5 @@ username = os.environ['EMAIL']
 password = os.environ['EMAILPASSWORD']
 user_id = os.environ["USERID"]
 
-fetch_gmail_emails(username, password, user_id, 'chile')
-fetch_gmail_emails(username, password, user_id, 'estado')
+fetch_gmail_emails(username, password, user_id, 'Banco de Chile')
+fetch_gmail_emails(username, password, user_id, 'Banco Estado')

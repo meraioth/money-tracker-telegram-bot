@@ -8,12 +8,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Transaction:
-    def __init__(self, activity, amount, description, timestamp, type, doc=None, user=None):
+    def __init__(self, activity, amount, description, timestamp, type, bank='Banco de Chile', doc=None, user=None):
         self.activity = activity
         self.amount = amount
         self.description = description
         self.timestamp = timestamp
         self.type = type
+        self.bank = bank
         self.doc = doc
         self.user = user
         self.reference_set = None
@@ -22,18 +23,25 @@ class Transaction:
 
     @staticmethod
     def from_dict(source):
-        return Transaction(source['activity'], source['amount'], source['description'], source['timestamp'], source['type'],
-                           source.get('doc'))
+        return Transaction(source['activity'],
+                           source['amount'],
+                           source['description'],
+                           source['timestamp'],
+                           source.get('type'),
+                           'Banco de Chile',
+                           source.get('doc'),
+                           source.get('user'))
 
     def to_dict(self):
         return {'activity': self.activity,
                 'amount': self.amount,
                 'description': self.description,
                 'timestamp': self.timestamp,
-                'type': self.type}
+                'type': self.type,
+                'bank': self.bank}
 
     def __repr__(self):
-        return f"actividad: {self.activity}, \nmonto: {self.amount}, \ncomercio: {self.description}, \nfecha: {self.timestamp}, \ntype: {self.type} "
+        return f"actividad: {self.activity}, \nmonto: {self.amount}, \ncomercio: {self.description}, \nfecha: {self.timestamp}, \ntipo: {self.type}, \nbanco: {self.bank} "
 
     def persisted(self):
         tr = self.reference()
@@ -60,6 +68,9 @@ class Transaction:
 
     def update_type(self):
         return self.reference()[0].reference.set({"type": self.type}, merge=True)
+
+    def update_bank(self):
+        return self.reference()[0].reference.set({"bank": self.bank}, merge=True)
 
     def firebase_collection(self):
         return self.client.collection('users').document(self.user).collection("transactions")
