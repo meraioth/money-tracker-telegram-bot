@@ -192,14 +192,14 @@ async def sync(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if validate_session_user(update):
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="Ingresa mes a consultar")
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Ingresa mes y año a consultar (MM-YYYY)")
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="No te conozco")
     return MONTH
 
 
 async def month_summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    month = int(update.message.text)
+    month = datetime.strptime(update.message.text, "%m-%Y")
     if validate_session_user(update):
         await build_summary(context, update.effective_chat.id, month)
     else:
@@ -285,8 +285,8 @@ def validate_session_user(update):
 
 
 def subcategory_summary(subcategory, month, user_id):
-    start_date = datetime.today().replace(day=1).replace(month=month)
-    end_month = calendar.monthrange(start_date.year, month)[1]
+    start_date = month.replace(day=1)
+    end_month = calendar.monthrange(start_date.year, start_date.month)[1]
     end_date = start_date.replace(day=end_month)
 
     tr = transactions(user_id)
@@ -316,7 +316,7 @@ def summary(user_id):
     return output
 
 
-async def build_summary(context, chat_id, month=datetime.today().month):
+async def build_summary(context, chat_id, month=datetime.today()):
     for k in Categories:
         output = k + ":\n"
         for subk in Categories[k]:
